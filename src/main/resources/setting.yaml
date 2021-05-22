@@ -1,0 +1,4 @@
+port: 8001
+brokerHost: 127.0.0.1
+brokerPort: 9092
+topicName: tweety
