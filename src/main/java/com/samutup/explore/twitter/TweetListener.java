@@ -13,6 +13,9 @@ import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
+import io.vertx.core.json.Json;
+import io.vertx.kafka.client.producer.KafkaProducer;
+import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -55,12 +58,12 @@ public class TweetListener {
     return this;
   }
 
-  public void listen() {
+  public void listen(KafkaProducer<String, String> producer, String topicName) {
     new Thread(() -> {
       while (!this.client.isDone()) {
         try {
           String msg = this.msgQueue.take();
-          LOGGER.info(msg);
+          handle(msg, producer, topicName);
         } catch (InterruptedException e) {
           LOGGER.error("error while taking message", e);
           e.printStackTrace();
@@ -68,6 +71,15 @@ public class TweetListener {
       }
     }).start();
 
+  }
+
+  public static void handle(String tweet, KafkaProducer<String, String> producer,
+      String topicName) {
+    //filter the tweet content
+    TweetPayload tweetPayload = Json.decodeValue(tweet, TweetPayload.class);
+    KafkaProducerRecord<String, String> producerRecord = KafkaProducerRecord
+        .create(topicName, Json.encode(tweetPayload));
+    producer.send(producerRecord).onSuccess(recordMetadata ->{});
   }
 
   public TweetListener stop() {

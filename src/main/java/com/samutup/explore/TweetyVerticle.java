@@ -100,7 +100,7 @@ public class TweetyVerticle extends AbstractVerticle {
       KafkaProducer<String, String> kafkaProducer = kafkaProducerBuilder(vertx, bootstrapServer);
       // create server
       HttpServer server = vertx.createHttpServer();
-      tweetListener.listen();
+      tweetListener.listen(kafkaProducer, tweetySetting.getTopicName());
       router.route().handler(BodyHandler.create()).blockingHandler(contextHandler);
       server.requestHandler(router).listen(portNumber, serverStartupListenHandler);
     } catch (Exception exception) {
