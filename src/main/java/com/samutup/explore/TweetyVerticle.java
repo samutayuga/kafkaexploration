@@ -64,6 +64,11 @@ public class TweetyVerticle extends AbstractVerticle {
     config.put(ProducerConfig.RETRIES_CONFIG,String.valueOf(Integer.MAX_VALUE));
     config.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION,"5");
 
+    //high throughput producer (at the expense of a bit of latency and CPU usage)
+    config.put(ProducerConfig.COMPRESSION_TYPE_CONFIG,"snappy");
+    config.put(ProducerConfig.BATCH_SIZE_CONFIG,Integer.toString(32*1024));
+    config.put(ProducerConfig.LINGER_MS_CONFIG,"20");
+
 // use producer for interacting with Apache Kafka
     KafkaProducer<String, String> producer = KafkaProducer.create(vertx, config);
     return producer;

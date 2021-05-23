@@ -243,6 +243,63 @@ Example config
         transactional.id = null
         value.serializer = class org.apache.kafka.common.serialization.StringSerializer
 ```
+## Message Compression
+* Producer usually send data in text-based, for example with JSON data
+* In this case, it is important to apply compression to the producer
+* Compression is enabled at the Producer level and does not require any configuration change in the Broker or in the Consumer
+* `compression.type` can be `none`, (default), `gzip`, `lz4`, `snappy`
+* Compression is more effective for the bigger batch of message being sent to Kafka
+
+![Consumer](compress.png)
+
+* The compressed batch has the following advantages:
+  > Much smaller producer request size (compression ratio up to 4x!)
+  > Faster to transfer data over the network => less latency
+  > Better throughput
+  > Better disk utilization in Kafka (stored message on disk are smaller)
+   
+* Disadvantages (very minor)
+  > Producers must commit some CPU cycles to compress
+  > Consumer must commit some CPU cycles to decompress
+  
+* Overall
+  > Consider testing snappy or lz4 for optimal speed / compression ratio
+   
+* Best Practice
+  > Find a compression algorithm that gives you the best performance for your specific data. Test all if them !
+  > Always use compression in production and especially if you have high throughput
+  > Consider tweaking `linger.ms` and `batch.size` to have bigger batches and therefore more compression and higher throughput
+
+## linger.ms & batch.size
+* By default, Kafka tries to send records as soon as possible
+  > it will up to 5 request in flight, meaning up to 5 messages individually sent at the same time
+  > After this, if more messages have to be sent while others are in flight, Kafka is smart and will start batching them while they wait to send them all at once
+  
+* This smart batching allows Kafka to increase throughput while maintaining very low latency.
+* Batches have higher compression ratio so better efficiency
+* So how can we control the batching mechanism?
+
+`linger.ms`
+* number of milliseconds a producer is willing to wait before sending a batch out (default 0)
+* By introducing some lag (for example linger.ms=5), we increase the chances of messages being sent together in a batch
+* So at the expense of introducing a small delay, we can increase throughput, compression and efficiency of our producer
+* If a batch is full (see batch.size) before the end of the linger.ms period, it will be sent to Kafka right away.
+  ![Linger ms](lingerms.png)
+  
+`batch.size`
+* Maximum number of bytes that will be included in a batch. The default is 16KB
+* Increasing a batch size to something like 32KB or 64KB can help increasing the compression, throughput, and efficienct request
+* Any message that is bigger than batch size will noht be batched.
+* A batch is allocated per partitiion, so make sure that you don't set if to a number that is too high, otherwise you will run waste memory.
+* `Kafka producer metrics` is used to monitor the average batch of size.
+
+## High throughput Producer
+* We will add snappy message compression in our producer
+* snappy is very helpful if your messages are text based, for example log lines or JSON document
+* snappy has a good balance between of CPU and compression ratio
+* We will also increase the batch.size to 32KB and introduce a small delay through linger.ms (20 ms)
+
+
 ## Consumer Groups
 
 * Consumers read data in consumer groups
