@@ -58,7 +58,11 @@ public class TweetyVerticle extends AbstractVerticle {
         "org.apache.kafka.common.serialization.StringSerializer");
     config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
         "org.apache.kafka.common.serialization.StringSerializer");
-    config.put("acks", "1");
+    //for safer producer
+    config.put(ProducerConfig.ACKS_CONFIG, "all");
+    config.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG,"true");
+    config.put(ProducerConfig.RETRIES_CONFIG,String.valueOf(Integer.MAX_VALUE));
+    config.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION,"5");
 
 // use producer for interacting with Apache Kafka
     KafkaProducer<String, String> producer = KafkaProducer.create(vertx, config);

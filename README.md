@@ -1,19 +1,4 @@
-# Go Contain
-
-To have kebernetes environment on local machine which have `Kafka` and `camel-k` 
->To ebable developer to have the envirenment to deploy and test kafka integration with camel-ks
-
-
-To automate the steps,
-
-* download minikube
-* install minikube
-* install helm repository in minikube
-* get helm for kafka
-* get helm for camel-k
-* install kafka and camel-k using helms
-
-# Kafka Fundamental
+s# Kafka Fundamental
 
 ## Topics, partitions and offsetss
 `Topics`
@@ -80,11 +65,40 @@ Possible partitions accross brokers are as below,
 * Producers automatically know to which broker and partition to write to
 * In case of Broker failures, Producers will automatically recover
 * Producers can choose to receive acknowledgement of data writes:
-  > akcs=0: Producer won't wait for acknowledgement (possible data lost)
+  
+  
+  **akcs=0**
+  > Producer won't wait for acknowledgement (possible data lost).
+  
+  ![Acks 0](acks0.png)
+   
+  > No response is requested. If the broker goes offline or an exception happens, 
+  > we won't know and will lose data. 
+  > Useful for data where it's okay tp potentially lose messages, such, `metrics collection`, `log collection`,etc
+  
 
-  > acks=l: Producer will wait for leader acknowledgement (limited data loss)
+  **acks=1** (default, since kafka 0.1)
+  > Leader response is requested, but replication is not guaranteed (happens in the background). 
+  > Producer will wait for leader acknowledgement (limited data loss). If an ack is not received, the producer may retry
+  ![Acks 1](acks1.png)
+  > If the leader broker goes offline before but replicas have not replicated teh data may lose
 
-  > acks=all: Leader + replicas aknowledgement (no data loss)
+  **acks=all** (replicas acks)
+  > Leader + replicas aknowledgement (no data loss)
+  > Add latency
+  > No data loss if enough replicas
+
+  ![Acks all](acksall.png)
+ 
+  > Necessary setting if you don't want to lose data
+  > Must be used in conjunction with `min.insync.replicas`
+  > `min.insync.replicas` can be set at the broker or topic level (override)
+  > `min.insync.replicas=2` implies that least 2 brokers that are ISR (including replica) must respond that they have data.
+  > That means if you use `replication.factor=3,min.insync=2,acks=all`, you can only tolerate 1 broker going down,
+  > otherwise producer will receive an exception on send 
+  
+  `Example`
+  ![Acks all](acksall_down2.png)
 
   ## Producers: Message keys
 
@@ -102,6 +116,133 @@ Possible partitions accross brokers are as below,
 
 ![Consumer](cons.png)
 
+## Producer Retries
+* In case of transient failures, developers are expected to handle exceptions, otherwise the data will be lost
+* Example of transient failure: `NotEnoughReplicasException`
+* There is a `retries` setting
+  > defaults to 0 for Kafka <= 2.0
+  > defaults to 214748383647 for Kafka >= 2.1
+   
+* The `retry.backoff.ms` settings is by default 100 ms
+
+## Producer Timeout
+* If retries > 0 , for example retries=2147483647
+* the producer won't try the request forever, it's bounded by a timeout
+* For this, you can set an intuitive Producer Timeout (KIP-91 - Kafka 2.1)
+* `delivery.timeout.ms=120000 ms == 2 minutes`
+* Records will be failed if they can't be acknowledged in `delivery.timeout.ms`
+
+## Producer Retries : Warning
+
+* In case of retries, there is a chance that messages will be sent out of order (if a batch has failed to be sennt)
+* If you rely on key-based ordering, that can be an issue
+* For this, you can set the setting while controls how many producer requests can be made in parallel: `max.in.flight.requests.per.connection`
+ > default: 5, set it to 1 if you need to ensure ordering (may impact throughput)
+* In Kafka >= 1.0.0, there is a better solution with idempotent producers.
+
+## Idempotent Producer
+> Here is the problem: the Producer can introduce duplicate messages in the Kafka due to the network errors
+![Idempotent Producer](idempotent_producer.png)
+> Idempotent Producer is implemented since `producer >= 0.11 and kafka >= 0.11`
+![Idempotent Producer](idempotent_producer1.png)
+> Basically, in kafka >= 0.11, you can define a `idempotent producer` which won't introduce duplicates on network error
+> Idempotent producers are great to guarantee a stable and safe pipeline
+> They come with:
+  * retries = Integer.MAX_VALUE
+  * max.in.flight.requests=1 (Kafka == 0.11) or
+  * max.in.flight.requests=5 (Kafka >= 1.0 - higher performance and keep ordering)
+    (ticket KAFKA-5494)
+    
+> These settings are applied automatically after your producer has started if you do not set them manually
+> Just set: 
+  ```shell
+  producerProps.put("enable.idempotence", true)
+  ```
+## Safe Producer
+**Kafka < 0.11**
+* acks=all (producer level)
+> ensures data is properly replicated before an ack is received
+* `min.insync.replicas=2` (broker/topic level)
+> ensures two brokers in ISR at least have the data after an ack
+* `retries=MAX_INT` (producer level)
+> ensures transient errors are retried indefinitely
+* `max.in.flight.requests.per.connection=1` (producer level)
+> ensures only one request is tried at any time, preventing message re-ordering in case of retries
+
+**Kafka >= 0.11**
+* `enable.idemptence=true` (producer level) + `min.insync.replicas=2` (broker/topic level)
+> Implies `acks=all,retries=MAX_INT,max.in.flight.requests.per.connection=1 (if Kafka 0.11 or 5 if Kafka >=1.0`, while keeping ordering guarantees and improving performance!
+* Running a `safe producer` might impact throughput and latency, always test for your use case.
+## Improve Kafka producer
+Example config
+```shell
+        acks = 1
+        batch.size = 16384
+        bootstrap.servers = [127.0.0.1:9092]
+        buffer.memory = 33554432
+        client.dns.lookup = use_all_dns_ips
+        client.id = producer-1
+        compression.type = none
+        connections.max.idle.ms = 540000
+        delivery.timeout.ms = 120000
+        enable.idempotence = false
+        interceptor.classes = []
+        internal.auto.downgrade.txn.commit = false
+        key.serializer = class org.apache.kafka.common.serialization.StringSerializer
+        linger.ms = 0
+        max.block.ms = 60000
+        max.in.flight.requests.per.connection = 5
+        max.request.size = 1048576
+        metadata.max.age.ms = 300000
+        metadata.max.idle.ms = 300000
+        metric.reporters = []
+        metrics.num.samples = 2
+        metrics.recording.level = INFO
+        metrics.sample.window.ms = 30000
+        partitioner.class = class org.apache.kafka.clients.producer.internals.DefaultPartitioner
+        receive.buffer.bytes = 32768
+        reconnect.backoff.max.ms = 1000
+        reconnect.backoff.ms = 50
+        request.timeout.ms = 30000
+        retries = 2147483647
+        retry.backoff.ms = 100
+        sasl.client.callback.handler.class = null
+        sasl.jaas.config = null
+        sasl.kerberos.kinit.cmd = /usr/bin/kinit
+        sasl.kerberos.min.time.before.relogin = 60000
+        sasl.kerberos.service.name = null
+        sasl.kerberos.ticket.renew.jitter = 0.05
+        sasl.kerberos.ticket.renew.window.factor = 0.8
+        sasl.login.callback.handler.class = null
+        sasl.login.class = null
+        sasl.login.refresh.buffer.seconds = 300
+        sasl.login.refresh.min.period.seconds = 60
+        sasl.login.refresh.window.factor = 0.8
+        sasl.login.refresh.window.jitter = 0.05
+        sasl.mechanism = GSSAPI
+        security.protocol = PLAINTEXT
+        security.providers = null
+        send.buffer.bytes = 131072
+        ssl.cipher.suites = null
+        ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+        ssl.endpoint.identification.algorithm = https
+        ssl.engine.factory.class = null
+        ssl.key.password = null
+        ssl.keymanager.algorithm = SunX509
+        ssl.keystore.location = null
+        ssl.keystore.password = null
+        ssl.keystore.type = JKS
+        ssl.protocol = TLSv1.3
+        ssl.provider = null
+        ssl.secure.random.implementation = null
+        ssl.trustmanager.algorithm = PKIX
+        ssl.truststore.location = null
+        ssl.truststore.password = null
+        ssl.truststore.type = JKS
+        transaction.timeout.ms = 60000
+        transactional.id = null
+        value.serializer = class org.apache.kafka.common.serialization.StringSerializer
+```
 ## Consumer Groups
 
 * Consumers read data in consumer groups
@@ -155,6 +296,11 @@ Possible partitions accross brokers are as below,
 ![Trucks](kafka_arch.png)
 
 ## Hand-ons
+`create topic`
+
+```shell
+kafka-topics --zookeeper 127.0.0.1:2181 --topic-name twitter_tweets --partitions 6 --replication-factor 1
+```
 `list topic`
 
 ```
