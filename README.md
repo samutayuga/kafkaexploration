@@ -299,6 +299,14 @@ Example config
 * snappy has a good balance between of CPU and compression ratio
 * We will also increase the batch.size to 32KB and introduce a small delay through linger.ms (20 ms)
 
+## Producer Default Partitioner and How keys are hashed
+* By default your keys are hashed using the `murmur2` algorithm.
+* It is most likely preferred to not override the behavior of the practitioner, but it is possible to do so (partiioner.class)
+* The formula is:
+```shell
+targetPartition = Utils.abs(Utils.murmur2(record.key()))% numPartitions
+```
+* This means that the same key will go to the same partition (we already know this), and adding partitions to a topic will completely alter the formula
 
 ## Consumer Groups
 
