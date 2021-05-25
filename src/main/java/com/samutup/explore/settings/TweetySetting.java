@@ -13,10 +13,25 @@ import com.google.common.base.Objects;
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 public class TweetySetting {
 
-  private int portNumber;
+  private int port;
   private String topicName;
   private String brokerHost;
   private String brokerPort;
+  private int requestPerConn = 5;
+  private CompressionType compressionType = CompressionType.none;
+  private int lingerMs;
+  private int batchSizeKb = 16;
+  private int retryBackoffMs = 100;
+  private int deliveryTimeOutMs = 120000;
+  private String restProduce;
+
+  public String getRestProduce() {
+    return restProduce;
+  }
+
+  public void setRestProduce(String restProduce) {
+    this.restProduce = restProduce;
+  }
 
   public String getTopicName() {
     return topicName;
@@ -42,12 +57,61 @@ public class TweetySetting {
     this.brokerPort = brokerPort;
   }
 
-  public int getPortNumber() {
-    return portNumber;
+
+  public int getRetryBackoffMs() {
+    return retryBackoffMs;
   }
 
-  public void setPortNumber(int portNumber) {
-    this.portNumber = portNumber;
+  public void setRetryBackoffMs(int retryBackoffMs) {
+    this.retryBackoffMs = retryBackoffMs;
+  }
+
+  public int getDeliveryTimeOutMs() {
+    return deliveryTimeOutMs;
+  }
+
+  public void setDeliveryTimeOutMs(int deliveryTimeOutMs) {
+    this.deliveryTimeOutMs = deliveryTimeOutMs;
+  }
+
+  public int getRequestPerConn() {
+    return requestPerConn;
+  }
+
+  public void setRequestPerConn(int requestPerConn) {
+    this.requestPerConn = requestPerConn;
+  }
+
+  public CompressionType getCompressionType() {
+    return compressionType;
+  }
+
+  public void setCompressionType(CompressionType compressionType) {
+    this.compressionType = compressionType;
+  }
+
+  public int getLingerMs() {
+    return lingerMs;
+  }
+
+  public void setLingerMs(int lingerMs) {
+    this.lingerMs = lingerMs;
+  }
+
+  public int getBatchSizeKb() {
+    return batchSizeKb;
+  }
+
+  public void setBatchSizeKb(int batchSizeKb) {
+    this.batchSizeKb = batchSizeKb;
+  }
+
+  public int getPort() {
+    return port;
+  }
+
+  public void setPort(int port) {
+    this.port = port;
   }
 
   @Override
@@ -58,25 +122,38 @@ public class TweetySetting {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TweetySetting tweetySetting = (TweetySetting) o;
-    return portNumber == tweetySetting.portNumber && Objects
-        .equal(topicName, tweetySetting.topicName) && Objects
-        .equal(brokerHost, tweetySetting.brokerHost) && Objects
-        .equal(brokerPort, tweetySetting.brokerPort);
+    TweetySetting that = (TweetySetting) o;
+    return port == that.port && requestPerConn == that.requestPerConn && lingerMs == that.lingerMs
+        && batchSizeKb == that.batchSizeKb && retryBackoffMs == that.retryBackoffMs
+        && deliveryTimeOutMs == that.deliveryTimeOutMs && Objects
+        .equal(topicName, that.topicName) && Objects
+        .equal(brokerHost, that.brokerHost) && Objects
+        .equal(brokerPort, that.brokerPort) && compressionType == that.compressionType
+        && Objects.equal(restProduce, that.restProduce);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(portNumber, topicName, brokerHost, brokerPort);
+    return Objects
+        .hashCode(port, topicName, brokerHost, brokerPort, requestPerConn, compressionType,
+            lingerMs,
+            batchSizeKb, retryBackoffMs, deliveryTimeOutMs, restProduce);
   }
 
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
-        .add("portNumber", portNumber)
+        .add("port", port)
         .add("topicName", topicName)
         .add("brokerHost", brokerHost)
         .add("brokerPort", brokerPort)
+        .add("requestPerConn", requestPerConn)
+        .add("compressionType", compressionType)
+        .add("lingerMs", lingerMs)
+        .add("batchSizeKb", batchSizeKb)
+        .add("retryBackoffMs", retryBackoffMs)
+        .add("deliveryTimeOutMs", deliveryTimeOutMs)
+        .add("restProduce", restProduce)
         .toString();
   }
 }

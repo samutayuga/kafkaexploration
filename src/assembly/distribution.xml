@@ -1,0 +1,30 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.0 http://maven.apache.org/xsd/assembly-2.1.0.xsd">
+  <id>distribution</id>
+  <formats>
+    <format>dir</format>
+  </formats>
+  <files>
+    <file>
+      <source>${basedir}/target/classes/Dockerfile</source>
+      <outputDirectory></outputDirectory>
+      <filtered>true</filtered>
+    </file>
+    <file>
+      <source>${basedir}/target/classes/launcher.sh</source>
+      <outputDirectory></outputDirectory>
+      <filtered>true</filtered>
+    </file>
+    <file>
+      <source>${project.build.directory}/${project.artifactId}-fat.jar</source>
+      <outputDirectory></outputDirectory>
+      <filtered>true</filtered>
+    </file>
+    <file>
+      <source>${project.build.directory}/classes/setting.yaml</source>
+      <outputDirectory></outputDirectory>
+      <filtered>true</filtered>
+    </file>
+  </files>
+</assembly>

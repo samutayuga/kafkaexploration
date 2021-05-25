@@ -1,0 +1,11 @@
+port: {{ include "{{ .Chart.Name }}.port" . }}
+broker_host: {{ .Values.apps.broker_host }}
+broker_port: {{ .Values.apps.broker_port }}
+topic_name: {{ .Values.apps.topic_name }}
+request_per_conn: {{ .Values.apps.request_per_conn }}
+compression_type: {{ .Values.apps.compression_type }}
+linger_ms: {{ .Values.apps.linger_ms }}
+batch_size_kb: {{ .Values.apps.batch_size_kb }}
+retry_backoff_ms: {{ .Values.apps.retry_backoff_ms }}
+delivery_time_out_ms: {{ .Values.apps.delivery_time_out_ms }}
+rest_produce: {{ .Values.apps.rest_produce }}

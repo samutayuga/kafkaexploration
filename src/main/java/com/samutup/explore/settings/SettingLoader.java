@@ -13,7 +13,7 @@ public class SettingLoader {
 
     private static final List<String> DEFAULT_CONFIG_LIST = Lists.newArrayList("setting");
 
-    private static final String DEFAULT_CONFIG_PATH = System.getenv("APP_ETC") + File.separator + "tweety";
+    private static final String DEFAULT_CONFIG_PATH = System.getenv("APP_ETC") + File.separator + "kafkatwitter";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SettingLoader.class);
 

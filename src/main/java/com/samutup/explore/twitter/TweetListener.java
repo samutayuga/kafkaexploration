@@ -58,6 +58,18 @@ public class TweetListener {
     return this;
   }
 
+  public void receive(KafkaProducer<String, String> producer, String topicName) {
+    while (!this.client.isDone()) {
+      try {
+        String msg = this.msgQueue.take();
+        handle(msg, producer, topicName);
+      } catch (InterruptedException e) {
+        LOGGER.error("error while taking message", e);
+        e.printStackTrace();
+      }
+    }
+  }
+
   public void listen(KafkaProducer<String, String> producer, String topicName) {
     new Thread(() -> {
       while (!this.client.isDone()) {
@@ -79,7 +91,8 @@ public class TweetListener {
     TweetPayload tweetPayload = Json.decodeValue(tweet, TweetPayload.class);
     KafkaProducerRecord<String, String> producerRecord = KafkaProducerRecord
         .create(topicName, Json.encode(tweetPayload));
-    producer.send(producerRecord).onSuccess(recordMetadata ->{});
+    producer.send(producerRecord).onSuccess(recordMetadata -> {
+    });
   }
 
   public TweetListener stop() {

@@ -15,6 +15,7 @@
     <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
     <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
     <exec-maven-plugin.version>3.0.0</exec-maven-plugin.version>
+    <docker-maven-plugin.version>1.4.13</docker-maven-plugin.version>
 
 
     <vertx.version>4.0.3</vertx.version>
@@ -156,6 +157,7 @@
   </dependencies>
 
   <build>
+    <finalName>${project.name}</finalName>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -185,11 +187,33 @@
                   implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
               </transformers>
               <outputFile>
-                ${project.build.directory}/${project.artifactId}-${project.version}-fat.jar
+                ${project.build.directory}/${project.artifactId}-fat.jar
               </outputFile>
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <phase>build</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <executable>eval</executable>
+          <arguments>
+            <argument>$(minikube docker-env)</argument>
+          </arguments>
+          <environmentVariables>
+            <LANG>en_US</LANG>
+          </environmentVariables>
+        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -205,6 +229,23 @@
             <argument>run</argument>
             <argument>${main.verticle}</argument>
           </arguments>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.spotify</groupId>
+        <artifactId>dockerfile-maven-plugin</artifactId>
+        <version>${docker-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>default</id>
+            <goals>
+              <goal>build</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <repository>samutup/kafka-twitter</repository>
+          <tag>${project.version}</tag>
         </configuration>
       </plugin>
     </plugins>
