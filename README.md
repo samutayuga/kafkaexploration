@@ -484,9 +484,10 @@ kafka-server-start server.properties
 kafka-console-producer --broker-list 127.0.0.0:9092 --topic first_topic
 ```
 
-`kafka console consumer`
+`reset the offset`
 
 ```shell
+kafka-consumer-groups --bootstrap-server 127.0.0.1:9092 --group tweet_squad --reset-offsets --execute --to-earliest --topic tweety
 ```
 # Kafka rides Camel-k
 
