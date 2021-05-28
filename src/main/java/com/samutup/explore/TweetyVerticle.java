@@ -16,11 +16,9 @@ import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.producer.KafkaProducer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 
 /**
@@ -30,23 +28,6 @@ public class TweetyVerticle extends AbstractVerticle {
 
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TweetyVerticle.class);
-  static Consumer<KafkaConsumerRecord<String, String>> recordConsumer = consumerRecord -> LOGGER
-      .info(
-          "processing key=" + consumerRecord.key() + " value=" + consumerRecord.value()
-              + " partition=" + consumerRecord.partition()
-              + " offset=" + consumerRecord.offset());
-
-  /*static KafkaConsumer<String, String> kafkaConsumerBuilder(String bootstrap, String group,
-      Vertx vertx) {
-    Map<String, String> config = new HashMap<>();
-    config.put("bootstrap.servers", bootstrap);
-    config.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-    config.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-    config.put("group.id", group);
-    config.put("auto.offset.reset", "earliest");
-    config.put("enable.auto.commit", "false");
-    return KafkaConsumer.create(vertx, config);
-  }*/
 
   static KafkaProducer<String, String> kafkaProducerBuilder(Vertx vertx,
       TweetySetting tweetySetting) {

@@ -6,12 +6,12 @@
     </encoder>
   </appender>
 
-  <logger name="com.mchange.v2" level="debug"/>
-  <logger name="io.netty" level="debug"/>
-  <logger name="io.vertx" level="debug"/>
+  <logger name="com.mchange.v2" level="trace"/>
+  <logger name="io.netty" level="trace"/>
+  <logger name="io.vertx" level="trace"/>
   <logger name="com.samutup.explore" level="debug"/>
 
-  <root level="debug">
+  <root level="trace">
     <appender-ref ref="STDOUT"/>
   </root>
 

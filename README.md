@@ -100,7 +100,93 @@ Possible partitions accross brokers are as below,
   `Example`
   ![Acks all](acksall_down2.png)
 
-  ## Producers: Message keys
+## Consumer Poll Behaviour
+* Kafka Consumers have a `poll` model, while many other messaging bus in enterprises have `push` model.
+* This allows consumers to control where in the log they want to consume, how fast, and gives them the ability to replay the events
+
+![Poll Consumer Model](pollconsumer.png)
+
+`fetch.min.bytes` (default 1)
+* Controls how much data you want to pull at least on each request
+* helps improving throughput and decreasing request number
+* at the cost of latency
+
+`max.poll.records` (default 500)
+
+* Controls how many records to receive per poll request
+* increase if your messages are very small and have a lot of available RAM
+* Cood to monitor how many records are polled per request
+
+`max.partitions.fetch.bytes` (default 1MB)
+
+* Maximum data returned by broker per partition
+* if you read from 100 partitions you will need a lot of memories (RAM)
+
+`fetch.max.bytes` (defaulkt 50 MB)
+
+* Maximum data returned for each fetch request (covers multiple partitions)
+* the consumer performs multiple fetches in parallel
+
+> Change these settings only if your consumer maxes out on throughput already
+
+## Consumer Offset Commits Strategies
+* (easy) enable.auto.commit=true and asynchrous processing of batches
+```java
+ while (true) {
+        consumer.poll(Duration.ofMillis(100))
+            .onSuccess(records -> records.records()
+                .forEach(p ->
+                    bufferHttpRequest.uri(buildUriWithId(p.value(), tweetySetting))
+                        .sendJson(Json.decodeValue(p.value()))
+                        .onSuccess(httpResponseHandler)
+                        .onFailure(throwableHandler)
+                ))
+            .onFailure(throwable -> LOGGER.error("Failed processing", throwable));
+      }
+
+```
+> With auto-commit, offsets will be committed automatically for you at a regular interval (`auto.commit.interval.ms=5000 by default`), every time you call `.poll`
+> If you do not use synchronous processing, you will be in `at-most-once` behaviour because offsets will be committed before your data is processed
+* (medium) enable.auto.commit=false and manual commit of offsets
+  ![Commit Manual](commit_manual.png)
+  
+> You control when you commit offsets and what is the condition for committing them
+> Example : accumulating record into buffer and then flushing the buffer to a database + committing the offsets then
+
+## Consumer Offset Reset Behaviour
+* A consumer is expected to read the data from a log continuously
+
+![Consumer Bahaviour](consumer_behaviour.png)
+
+* But if your application has a bug, your consumer can be down
+* If Kafka has a retention of 7 days, and your consumer is down for more than 7 days, the offsets are `invalid`›
+
+* Consumer behaviour
+
+`auto.offset.reset=latest`: Will read from the end of the log
+
+`auto.offset.reset=earliet`: will read from the start of the log
+
+`auto.offset.reset=none`: will throw exception if no offset is found
+
+* Consumer offset can be lost
+> if a consumer hasn't read new data in 1 day (Kafka < 2.0)
+> If a consumer hasn't read the new data in 7 days (Kafka >= 2.0)
+ 
+* This can be controlled by broker setting `offset.retention.minutes`
+
+## Replaying data for Consumer
+* To replay data for a consumer group:
+> Take all the consumers down
+> Use `kafka-consumer-group` command to set offset to what you want.
+> restart consumer
+
+## Recommendation
+* Set proper data retention period & offset retention period
+* Ensure the auto offset reset behaviour is the one you expect / want
+* Use replay capability in case of unexpected behavior
+
+## Producers: Message keys
 
   * Producer can choose to send a `key` with the message (string, number,etc ...)
   * If key=null, data is sent round robin (broker 101 then 102 then 103 ...)
@@ -170,7 +256,7 @@ Possible partitions accross brokers are as below,
 > ensures only one request is tried at any time, preventing message re-ordering in case of retries
 
 **Kafka >= 0.11**
-* `enable.idemptence=true` (producer level) + `min.insync.replicas=2` (broker/topic level)
+* `enable.idempotence=true` (producer level) + `min.insync.replicas=2` (broker/topic level)
 > Implies `acks=all,retries=MAX_INT,max.in.flight.requests.per.connection=1 (if Kafka 0.11 or 5 if Kafka >=1.0`, while keeping ordering guarantees and improving performance!
 * Running a `safe producer` might impact throughput and latency, always test for your use case.
 ## Improve Kafka producer
@@ -327,10 +413,17 @@ targetPartition = Utils.abs(Utils.murmur2(record.key()))% numPartitions
 * At most once:
 > offset are committed as soon as the message received
 > If the processing goes wrong, the message will be lost (it won't read again)
+
+  ![At Most Once](atmostone.png)
+
 * At lease once
 > Offsets are committed after the message is processed
 > if the processing goes wrong, the message will be read again
-> This can result in duplicate processing message. Make sure your processing is idempotemt
+> This can result in duplicate processing message. Make sure your processing is idempotent
+> processing again the message will not impact the system
+  
+  ![At Most Once](atleastone.png)
+   
 * Exactly once
 > Can be achieved for Kafka -> Kafka
 
