@@ -1,6 +1,8 @@
 package com.samutup.explore.twitter;
 
 import com.google.common.collect.Lists;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.twitter.hbc.ClientBuilder;
 import com.twitter.hbc.core.Client;
 import com.twitter.hbc.core.Constants;
@@ -13,20 +15,24 @@ import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
-import io.vertx.core.json.Json;
 import io.vertx.kafka.client.producer.KafkaProducer;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
+import io.vertx.kafka.client.producer.RecordMetadata;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.BiConsumer;
 
 public class TweetListener {
 
-  Logger LOGGER = LoggerFactory.getLogger(TweetListener.class);
+  static Logger LOGGER = LoggerFactory.getLogger(TweetListener.class);
   Client client;
   BlockingQueue<String> msgQueue = new LinkedBlockingDeque<String>(100000);
   BlockingQueue<Event> eventBlockingQueue = new LinkedBlockingQueue<Event>(1000);
+  static BiConsumer<RecordMetadata, JsonObject> biConsumer = (record, jsonObject) -> LOGGER.info(
+      "pushed: " + jsonObject.get("id") + ",offset:" + record.getOffset() + ",partition:" + record
+          .getPartition() + ",topic:" + record.getTopic());
 
   public static TweetListener init() {
     return new TweetListener();
@@ -58,17 +64,6 @@ public class TweetListener {
     return this;
   }
 
-  public void receive(KafkaProducer<String, String> producer, String topicName) {
-    while (!this.client.isDone()) {
-      try {
-        String msg = this.msgQueue.take();
-        handle(msg, producer, topicName);
-      } catch (InterruptedException e) {
-        LOGGER.error("error while taking message", e);
-        e.printStackTrace();
-      }
-    }
-  }
 
   public void listen(KafkaProducer<String, String> producer, String topicName) {
     new Thread(() -> {
@@ -88,11 +83,12 @@ public class TweetListener {
   public static void handle(String tweet, KafkaProducer<String, String> producer,
       String topicName) {
     //filter the tweet content
-    TweetPayload tweetPayload = Json.decodeValue(tweet, TweetPayload.class);
+    //TweetPayload tweetPayload = Json.decodeValue(tweet, TweetPayload.class);
+    JsonObject twObject = JsonParser.parseString(tweet).getAsJsonObject();
     KafkaProducerRecord<String, String> producerRecord = KafkaProducerRecord
-        .create(topicName, Json.encode(tweetPayload));
-    producer.send(producerRecord).onSuccess(recordMetadata -> {
-    });
+        .create(topicName, twObject.toString());
+    producer.send(producerRecord)
+        .onSuccess(recordMetadata -> biConsumer.accept(recordMetadata, twObject));
   }
 
   public TweetListener stop() {
