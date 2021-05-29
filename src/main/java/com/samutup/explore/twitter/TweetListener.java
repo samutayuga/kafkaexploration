@@ -86,7 +86,7 @@ public class TweetListener {
     //TweetPayload tweetPayload = Json.decodeValue(tweet, TweetPayload.class);
     JsonObject twObject = JsonParser.parseString(tweet).getAsJsonObject();
     KafkaProducerRecord<String, String> producerRecord = KafkaProducerRecord
-        .create(topicName, twObject.toString());
+        .create(topicName, tweet);
     producer.send(producerRecord)
         .onSuccess(recordMetadata -> biConsumer.accept(recordMetadata, twObject));
   }
