@@ -27,6 +27,7 @@ import java.util.function.BiConsumer;
 public class TweetListener {
 
   static Logger LOGGER = LoggerFactory.getLogger(TweetListener.class);
+  List<String> trends;
   Client client;
   BlockingQueue<String> msgQueue = new LinkedBlockingDeque<String>(100000);
   BlockingQueue<Event> eventBlockingQueue = new LinkedBlockingQueue<Event>(1000);
@@ -34,16 +35,16 @@ public class TweetListener {
       "pushed: " + jsonObject.get("id") + ",offset:" + record.getOffset() + ",partition:" + record
           .getPartition() + ",topic:" + record.getTopic());
 
-  public static TweetListener init() {
-    return new TweetListener();
+  public static TweetListener init(List<String> trends) {
+    return new TweetListener(trends);
   }
 
-  private TweetListener() {
+  private TweetListener(List<String> trends) {
 
     Hosts hosts = new HttpHosts(Constants.STREAM_HOST);
     StatusesFilterEndpoint hosebirdEndpoint = new StatusesFilterEndpoint();
     List<Long> followings = Lists.newArrayList(1234L, 566788L);
-    List<String> terms = Lists.newArrayList("elonmusk");
+    List<String> terms = trends;
     hosebirdEndpoint.followings(followings);
     hosebirdEndpoint.trackTerms(terms);
 

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
+import java.util.List;
 
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -23,6 +24,7 @@ public class TweetySetting {
   private int batchSizeKb = 16;
   private int retryBackoffMs = 100;
   private int deliveryTimeOutMs = 120000;
+  private List<String> trends;
   private String restProduce;
 
   public String getRestProduce() {
@@ -114,6 +116,14 @@ public class TweetySetting {
     this.port = port;
   }
 
+  public List<String> getTrends() {
+    return trends;
+  }
+
+  public void setTrends(List<String> trends) {
+    this.trends = trends;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -129,7 +139,8 @@ public class TweetySetting {
         .equal(topicName, that.topicName) && Objects
         .equal(brokerHost, that.brokerHost) && Objects
         .equal(brokerPort, that.brokerPort) && compressionType == that.compressionType
-        && Objects.equal(restProduce, that.restProduce);
+        && Objects.equal(trends, that.trends) && Objects
+        .equal(restProduce, that.restProduce);
   }
 
   @Override
@@ -137,7 +148,7 @@ public class TweetySetting {
     return Objects
         .hashCode(port, topicName, brokerHost, brokerPort, requestPerConn, compressionType,
             lingerMs,
-            batchSizeKb, retryBackoffMs, deliveryTimeOutMs, restProduce);
+            batchSizeKb, retryBackoffMs, deliveryTimeOutMs, trends, restProduce);
   }
 
   @Override
@@ -153,6 +164,7 @@ public class TweetySetting {
         .add("batchSizeKb", batchSizeKb)
         .add("retryBackoffMs", retryBackoffMs)
         .add("deliveryTimeOutMs", deliveryTimeOutMs)
+        .add("trends", trends)
         .add("restProduce", restProduce)
         .toString();
   }

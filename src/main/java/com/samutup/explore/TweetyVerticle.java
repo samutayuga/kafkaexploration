@@ -92,12 +92,7 @@ public class TweetyVerticle extends AbstractVerticle {
             this.tweetListener.stop();
             rc.response().setStatusCode(HttpResponseStatus.OK.code()).end();
           } else if (HttpMethod.POST.equals(rc.request().method())) {
-            KafkaProducer<String, String> kafkaProducer = kafkaProducerBuilder(vertx,
-                tweetySetting);
-//            vertx.<Void>executeBlocking(
-//                f -> this.tweetListener.receive(kafkaProducer,
-//                    tweetySetting.getTopicName()), voidAsyncResult -> LOGGER.info("completed"));
-            this.tweetListener = TweetListener.init().connect();
+            this.tweetListener = TweetListener.init(tweetySetting.getTrends()).connect();
             this.tweetListener
                 .listen(kafkaProducerBuilder(vertx, tweetySetting), tweetySetting.getTopicName());
             rc.response().setStatusCode(HttpResponseStatus.CREATED.code()).end();
