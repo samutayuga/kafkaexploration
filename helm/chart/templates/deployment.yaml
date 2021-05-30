@@ -64,6 +64,26 @@ spec:
         - name: JAVA_OPTS
           value: -server -Xss256k -Xms1024m -Xmx1024m -XX:ParallelGCThreads=1 -XX:+PerfDisableSharedMem -XX:+UseParallelOldGC -XX:CICompilerCount=2 -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/heapdump.bin -Dcom.sun.management.jmxremote.port=31084 -Dcom.sun.management.jmxremote.local.only=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.rmi.port=31084 -Djava.rmi.server.hostname=localhost
 {{- end }}
+        - name: CONSUMER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: twitter-account
+              key: consumer-key
+        - name: CONSUMER_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: twitter-account
+              key: consumer-secret
+        - name: ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: twitter-account
+              key: access-token
+        - name: ACCESS_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: twitter-account
+              key: access-secret
         resources:
 {{ toYaml .Values.deployment.resources | indent 10 }}
         volumeMounts:

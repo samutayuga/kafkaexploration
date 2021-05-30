@@ -47,9 +47,9 @@ public class TweetListener {
     List<String> terms = trends;
     hosebirdEndpoint.followings(followings);
     hosebirdEndpoint.trackTerms(terms);
-
-    Authentication authentication = new OAuth1(TweetCred.cons_key.value,
-        TweetCred.cons_secret.value, TweetCred.access_token.value, TweetCred.access_secret.value);
+    TweetCred tweetCred = new TweetCred();
+    Authentication authentication = new OAuth1(tweetCred.getConsumerKey(),
+        tweetCred.getConsumerSecret(), tweetCred.getAccessToken(), tweetCred.getAccessSecret());
     ClientBuilder clientBuilder = new ClientBuilder()
         .name("samutup-01")
         .hosts(hosts)

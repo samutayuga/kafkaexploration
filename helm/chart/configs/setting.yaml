@@ -8,4 +8,7 @@ linger_ms: {{ .Values.apps.linger_ms }}
 batch_size_kb: {{ .Values.apps.batch_size_kb }}
 retry_backoff_ms: {{ .Values.apps.retry_backoff_ms }}
 delivery_time_out_ms: {{ .Values.apps.delivery_time_out_ms }}
+trends:
+  - bitcoin
+  - blockchain
 rest_produce: {{ .Values.apps.rest_produce }}
